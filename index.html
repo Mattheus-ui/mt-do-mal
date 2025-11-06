@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garagem MT-03 | Simulação DB</title>
+    <!-- Carrega o Tailwind CSS para estilos rápidos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonte Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Define a fonte Inter como padrão */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Esconde os botões de edição por padrão */
+        #botoesEdicao {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+
+    <div class="container mx-auto p-6 max-w-4xl">
+        
+        <!-- Cabeçalho -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-400">Garagem MT-03</h1>
+            <p class="text-lg text-gray-300">Simulação de Operações de Banco de Dados</p>
+        </header>
+
+        <!-- Seção do Formulário (INSERT e UPDATE) -->
+        <section class="bg-gray-800 p-6 rounded-lg shadow-xl mb-8">
+            <h2 class="text-2xl font-semibold mb-4" id="formTitulo">Adicionar Nova Moto (INSERT)</h2>
+            <form id="motoForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- ID oculto para saber qual item editar -->
+                <input type="hidden" id="motoId">
+                
+                <div>
+                    <label for="modelo" class="block text-sm font-medium text-gray-300">Modelo</label>
+                    <input type="text" id="modelo" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="MT-03 ABS" required>
+                </div>
+                <div>
+                    <label for="ano" class="block text-sm font-medium text-gray-300">Ano</label>
+                    <input type="number" id="ano" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="2024" required>
+                </div>
+                <div>
+                    <label for="cor" class="block text-sm font-medium text-gray-300">Cor</label>
+                    <input type="text" id="cor" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Preto Fosco" required>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="md:col-span-3 mt-4">
+                    <!-- Botão de Inserir (Padrão) -->
+                    <div id="botoesAdicionar">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                            Adicionar (INSERT)
+                        </button>
+                    </div>
+                    <!-- Botões de Edição (Ocultos) -->
+                    <div id="botoesEdicao" class="flex gap-4">
+                        <button type="submit" class="w-1/2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                            Salvar (UPDATE)
+                        </button>
+                        <button type="button" id="btnCancelar" class="w-1/2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- Seção de Exibição (SELECT) -->
+        <section class="bg-gray-800 p-6 rounded-lg shadow-xl">
+            <h2 class="text-2xl font-semibold mb-4">Motos na Garagem (SELECT *)</h2>
+            <div id="listaMotos" class="space-y-4">
+                <!-- Os dados serão inseridos aqui pelo JavaScript -->
+                <p class="text-gray-400">Nenhuma moto cadastrada ainda.</p>
+            </div>
+        </section>
+
+        <!-- Nota de Rodapé -->
+        <footer class="text-center text-gray-500 mt-8">
+            <p>Este site simula operações SQL (INSERT, SELECT, UPDATE, DELETE) usando JavaScript.</p>
+            <p>Nenhum banco de dados real está conectado. Os dados são perdidos ao recarregar a página.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- NOSSO "BANCO DE DADOS" EM MEMÓRIA ---
+        // É um array de objetos. Cada objeto é uma "linha" da tabela.
+        let garagem = [
+            { id: 1, modelo: "MT-03 ABS", ano: 2023, cor: "Azul Racing" },
+            { id: 2, modelo: "MT-03 ABS", ano: 2024, cor: "Preto Fosco" }
+        ];
+        // Simula o AUTO_INCREMENT do SQL
+        let nextId = 3;
+
+        // --- REFERÊNCIAS AOS ELEMENTOS DO HTML ---
+        const form = document.getElementById('motoForm');
+        const formTitulo = document.getElementById('formTitulo');
+        const listaMotos = document.getElementById('listaMotos');
+        
+        // Inputs
+        const inputId = document.getElementById('motoId');
+        const inputModelo = document.getElementById('modelo');
+        const inputAno = document.getElementById('ano');
+        const inputCor = document.getElementById('cor');
+
+        // Botões
+        const divBotoesAdicionar = document.getElementById('botoesAdicionar');
+        const divBotoesEdicao = document.getElementById('botoesEdicao');
+        const btnCancelar = document.getElementById('btnCancelar');
+
+        // --- FUNÇÃO DE RENDERIZAÇÃO (Equivalente ao SELECT *) ---
+        // Lê o array 'garagem' e o exibe na tela.
+        function renderizarGaragem() {
+            // Limpa a lista atual
+            listaMotos.innerHTML = '';
+
+            if (garagem.length === 0) {
+                listaMotos.innerHTML = '<p class="text-gray-400">Nenhuma moto cadastrada ainda.</p>';
+                return;
+            }
+
+            // Para cada moto no array, cria um elemento HTML
+            garagem.forEach(moto => {
+                const motoElemento = document.createElement('div');
+                motoElemento.className = 'bg-gray-700 p-4 rounded-lg shadow-md flex flex-col md:flex-row justify-between md:items-center gap-4';
+                
+                // Informações da moto
+                motoElemento.innerHTML = `
+                    <div class="flex-1">
+                        <p class="text-xl font-semibold">${moto.modelo}</p>
+                        <p class="text-gray-300">Ano: ${moto.ano} | Cor: ${moto.cor} | ID: ${moto.id}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button data-id="${moto.id}" class="btn-editar bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm">
+                            Editar (UPDATE)
+                        </button>
+                        <button data-id="${moto.id}" class="btn-excluir bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm">
+                            Excluir (DELETE)
+                        </button>
+                    </div>
+                `;
+                listaMotos.appendChild(motoElemento);
+            });
+
+            // Adiciona os ouvintes de eventos aos novos botões
+            adicionarOuvintesDeAcao();
+        }
+
+        // --- FUNÇÃO PRINCIPAL DO FORMULÁRIO (INSERT e UPDATE) ---
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o recarregamento da página
+
+            // Pega os valores dos inputs
+            const id = inputId.value;
+            const modelo = inputModelo.value;
+            const ano = inputAno.value;
+            const cor = inputCor.value;
+
+            if (!modelo || !ano || !cor) {
+                // Simulação de "NOT NULL constraint"
+                alert("Por favor, preencha todos os campos.");
+                return;
+            }
+            
+            if (id) {
+                // --- LÓGICA DE UPDATE (ALTER/UPDATE) ---
+                // Se existe um ID, estamos editando
+                garagem = garagem.map(moto => {
+                    if (moto.id === parseInt(id)) {
+                        // Encontrou a moto, retorna os novos dados
+                        return { id: moto.id, modelo: modelo, ano: parseInt(ano), cor: cor };
+                    }
+                    // Não é a moto, retorna os dados antigos
+                    return moto;
+                });
+                
+            } else {
+                // --- LÓGICA DE INSERT ---
+                // Se não existe ID, estamos criando
+                const novaMoto = {
+                    id: nextId,
+                    modelo: modelo,
+                    ano: parseInt(ano),
+                    cor: cor
+                };
+                garagem.push(novaMoto); // Adiciona ao "banco de dados"
+                nextId++; // Incrementa o ID para o próximo
+            }
+
+            // Limpa o formulário e reseta o modo de edição
+            resetarFormulario();
+            // Atualiza a lista na tela
+            renderizarGaragem();
+        });
+
+        // --- ADICIONA OUVIDORES PARA OS BOTÕES DE AÇÃO (DELETE e UPDATE) ---
+        function adicionarOuvintesDeAcao() {
+            // --- LÓGICA DE DELETE (DROP/DELETE) ---
+            document.querySelectorAll('.btn-excluir').forEach(botao => {
+                botao.addEventListener('click', function() {
+                    const idParaExcluir = parseInt(this.dataset.id);
+                    
+                    // Filtra o array, removendo o item com o ID correspondente
+                    // Isso é o equivalente a 'DELETE FROM garagem WHERE id = ?'
+                    garagem = garagem.filter(moto => moto.id !== idParaExcluir);
+                    
+                    // Atualiza a tela
+                    renderizarGaragem();
+                    // Garante que o formulário não esteja editando o item excluído
+                    resetarFormulario();
+                });
+            });
+
+            // --- LÓGICA DE PREPARAÇÃO PARA UPDATE ---
+            document.querySelectorAll('.btn-editar').forEach(botao => {
+                botao.addEventListener('click', function() {
+                    const idParaEditar = parseInt(this.dataset.id);
+                    
+                    // Encontra a moto no "banco de dados"
+                    // 'SELECT * FROM garagem WHERE id = ?'
+                    const motoParaEditar = garagem.find(moto => moto.id === idParaEditar);
+
+                    if (motoParaEditar) {
+                        // Preenche o formulário com os dados da moto
+                        inputId.value = motoParaEditar.id;
+                        inputModelo.value = motoParaEditar.modelo;
+                        inputAno.value = motoParaEditar.ano;
+                        inputCor.value = motoParaEditar.cor;
+
+                        // Altera a interface para o modo de edição
+                        formTitulo.innerText = 'Editando Moto (UPDATE)';
+                        divBotoesAdicionar.style.display = 'none';
+                        divBotoesEdicao.style.display = 'flex';
+                        
+                        // Rola a tela para o topo
+                        window.scrollTo(0, 0);
+                    }
+                });
+            });
+        }
+
+        // --- CANCELAR EDIÇÃO ---
+        btnCancelar.addEventListener('click', function() {
+            resetarFormulario();
+        });
+
+        // --- FUNÇÃO AUXILIAR PARA LIMPAR O FORMULÁRIO ---
+        function resetarFormulario() {
+            form.reset(); // Limpa os campos
+            inputId.value = ''; // Limpa o ID oculto
+            
+            // Reseta a interface para o modo de adição
+            formTitulo.innerText = 'Adicionar Nova Moto (INSERT)';
+            divBotoesAdicionar.style.display = 'block';
+            divBotoesEdicao.style.display = 'none';
+        }
+
+        // --- CARGA INICIAL (Roda o SELECT * quando a página carrega) ---
+        // Espera o DOM estar pronto para renderizar a lista
+        document.addEventListener('DOMContentLoaded', renderizarGaragem);
+
+    </script>
+</body>
+</html>

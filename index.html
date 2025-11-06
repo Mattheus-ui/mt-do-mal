@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -84,19 +84,47 @@
         <!-- Nota de Rodapé -->
         <footer class="text-center text-gray-500 mt-8">
             <p>Este site simula operações SQL (INSERT, SELECT, UPDATE, DELETE) usando JavaScript.</p>
-            <p>Nenhum banco de dados real está conectado. Os dados são perdidos ao recarregar a página.</p>
+            <p>Os dados estão salvos no seu navegador usando <strong>LocalStorage</strong>. Eles não são perdidos ao recarregar.</p>
         </footer>
     </div>
 
     <script>
-        // --- NOSSO "BANCO DE DADOS" EM MEMÓRIA ---
-        // É um array de objetos. Cada objeto é uma "linha" da tabela.
-        let garagem = [
-            { id: 1, modelo: "MT-03 ABS", ano: 2023, cor: "Azul Racing" },
-            { id: 2, modelo: "MT-03 ABS", ano: 2024, cor: "Preto Fosco" }
-        ];
-        // Simula o AUTO_INCREMENT do SQL
-        let nextId = 3;
+        // --- NOSSO "BANCO DE DADOS" USANDO LOCALSTORAGE ---
+        // O localStorage armazena dados no navegador que persistem após recarregar.
+        // Ele só armazena strings, então usamos JSON.
+
+        // Função para salvar os dados no localStorage
+        function salvarNoLocalStorage() {
+            localStorage.setItem('garagem_mt03_dados', JSON.stringify(garagem));
+            localStorage.setItem('garagem_mt03_nextId', nextId.toString());
+        }
+
+        // Função para carregar os dados do localStorage
+        function carregarDoLocalStorage() {
+            const dadosSalvos = localStorage.getItem('garagem_mt03_dados');
+            const nextIdSalvo = localStorage.getItem('garagem_mt03_nextId');
+
+            if (dadosSalvos) {
+                return {
+                    garagem: JSON.parse(dadosSalvos),
+                    nextId: nextIdSalvo ? parseInt(nextIdSalvo) : 1
+                };
+            } else {
+                // Se não houver nada salvo, retorna os dados iniciais de exemplo
+                return {
+                    garagem: [
+                        { id: 1, modelo: "MT-03 ABS", ano: 2023, cor: "Azul Racing" },
+                        { id: 2, modelo: "MT-03 ABS", ano: 2024, cor: "Preto Fosco" }
+                    ],
+                    nextId: 3
+                };
+            }
+        }
+
+        // Carrega os dados ao iniciar
+        const dadosIniciais = carregarDoLocalStorage();
+        let garagem = dadosIniciais.garagem;
+        let nextId = dadosIniciais.nextId;
 
         // --- REFERÊNCIAS AOS ELEMENTOS DO HTML ---
         const form = document.getElementById('motoForm');
@@ -197,6 +225,8 @@
             resetarFormulario();
             // Atualiza a lista na tela
             renderizarGaragem();
+            // Salva as mudanças no localStorage
+            salvarNoLocalStorage();
         });
 
         // --- ADICIONA OUVIDORES PARA OS BOTÕES DE AÇÃO (DELETE e UPDATE) ---
@@ -205,13 +235,13 @@
             document.querySelectorAll('.btn-excluir').forEach(botao => {
                 botao.addEventListener('click', function() {
                     const idParaExcluir = parseInt(this.dataset.id);
-                    
-                    // Filtra o array, removendo o item com o ID correspondente
-                    // Isso é o equivalente a 'DELETE FROM garagem WHERE id = ?'
+                    // 'DELETE FROM garagem WHERE id = ?'
                     garagem = garagem.filter(moto => moto.id !== idParaExcluir);
                     
                     // Atualiza a tela
                     renderizarGaragem();
+                    // Salva as mudanças no localStorage
+                    salvarNoLocalStorage();
                     // Garante que o formulário não esteja editando o item excluído
                     resetarFormulario();
                 });
